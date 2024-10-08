@@ -1,5 +1,8 @@
 import * as esbuild from 'esbuild';
-import { readdirSync } from 'fs';
+import express from 'express';
+import { readdirSync, readFileSync } from 'fs';
+import http from 'http';
+import https from 'https';
 import { join, sep } from 'path';
 
 // Config output
@@ -12,7 +15,14 @@ const ENTRY_POINTS = ['src/index.ts'];
 // Config dev serving
 const LIVE_RELOAD = !PRODUCTION;
 const SERVE_PORT = 3000;
-const SERVE_ORIGIN = `http://localhost:${SERVE_PORT}`;
+const SERVE_ORIGIN = `https://localhost:${SERVE_PORT}`; // HTTPS для внешнего сервера
+
+// HTTPS options
+const HTTPS_OPTIONS = {
+  key: readFileSync('localhost-key.pem'),
+  cert: readFileSync('localhost.pem'),
+  secureProtocol: 'TLSv1_2_method', // Используем TLS 1.2
+};
 
 // Create context
 const context = await esbuild.context({
@@ -32,17 +42,48 @@ const context = await esbuild.context({
 if (PRODUCTION) {
   await context.rebuild();
   context.dispose();
-}
-
-// Watch and serve files in dev
-else {
+} else {
   await context.watch();
-  await context
-    .serve({
-      servedir: BUILD_DIRECTORY,
-      port: SERVE_PORT,
-    })
-    .then(logServedFiles);
+
+  // Start esbuild's internal server on HTTP
+  const esbuildServer = await context.serve({
+    servedir: BUILD_DIRECTORY,
+    port: SERVE_PORT + 1, // Порт для esbuild-сервера
+  });
+
+  // Create an Express server to handle HTTPS requests
+  const app = express();
+
+  // Проксируем запросы к esbuild серверу через HTTP
+  app.use((req, res) => {
+    const options = {
+      hostname: 'localhost',
+      port: SERVE_PORT + 1,
+      path: req.url,
+      method: req.method,
+      headers: req.headers,
+    };
+
+    // Используем http для внутреннего подключения
+    const proxyReq = http.request(options, (proxyRes) => {
+      res.writeHead(proxyRes.statusCode, proxyRes.headers);
+      proxyRes.pipe(res, { end: true });
+    });
+
+    proxyReq.on('error', (e) => {
+      console.error(`Problem with request: ${e.message}`);
+      res.status(500).send('Internal Server Error');
+    });
+
+    req.pipe(proxyReq, { end: true });
+  });
+
+  // Создаем HTTPS-сервер на основе express
+  https.createServer(HTTPS_OPTIONS, app).listen(SERVE_PORT, () => {
+    console.log(`Serving on ${SERVE_ORIGIN}`);
+  });
+
+  logServedFiles();
 }
 
 /**
