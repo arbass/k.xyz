@@ -5,6 +5,7 @@ import { func_collapseButtons } from '$utils/collapse-buttons';
 import { func_heightTransition } from '$utils/height-transition';
 import { func_heroForm } from '$utils/hero-form';
 import { func_mindConnections } from '$utils/mind-connections';
+import { func_statsHero } from '$utils/stats-hero';
 import { func_syncClick } from '$utils/sync-click';
 
 window.Webflow ||= [];
@@ -17,4 +18,5 @@ window.Webflow.push(() => {
   func_heightTransition();
   func_syncClick();
   func_buttonTextToggl();
+  func_statsHero();
 });
