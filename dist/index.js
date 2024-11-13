@@ -276,118 +276,140 @@
   };
   func_heroForm();
 
-  // src/utils/mind-connections.ts
-  var func_mindConnections = () => {
-    const all_mindDots = document.querySelectorAll("[mind-connection]");
-    if (all_mindDots.length) {
-      const groups = {};
-      all_mindDots.forEach((el) => {
-        const key = el.getAttribute("mind-connection");
-        if (!groups[key]) {
-          groups[key] = [];
+  // src/utils/mind-connections-leader.ts
+  https:
+    setTimeout(() => {
+      let currentLineStyleIndex = 1;
+      const lineStyles = ["straight", "grid", "curved"];
+      const connectionsData = [];
+      function drawConnections() {
+        let svg = document.getElementById("connection-svg");
+        if (!svg) {
+          svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+          svg.setAttribute("id", "connection-svg");
+          svg.style.position = "absolute";
+          svg.style.top = "0";
+          svg.style.left = "0";
+          svg.style.width = "100%";
+          svg.style.height = "100%";
+          svg.style.pointerEvents = "none";
+          svg.style.overflow = "visible";
+          document.body.appendChild(svg);
         }
-        groups[key].push(el);
-        const computedStyle = window.getComputedStyle(el);
-        if (computedStyle.position === "static") {
-          el.style.position = "relative";
-        }
-        el.style.zIndex = "2";
-      });
-      let svg = document.getElementById("mind-connection-svg");
-      if (!svg) {
-        svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-        svg.setAttribute("id", "mind-connection-svg");
-        svg.style.position = "fixed";
-        svg.style.top = "0";
-        svg.style.left = "0";
-        svg.style.width = "100%";
-        svg.style.height = "100%";
-        svg.style.pointerEvents = "none";
-        svg.style.zIndex = "1";
-        document.body.appendChild(svg);
-      }
-      const lines = [];
-      Object.values(groups).forEach((group) => {
-        if (group.length >= 2) {
-          for (let i = 0; i < group.length; i++) {
-            for (let j = i + 1; j < group.length; j++) {
-              const el1 = group[i];
-              const el2 = group[j];
-              const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-              line.setAttribute("stroke", "rgb(102, 102, 102)");
-              line.setAttribute("stroke-width", "1");
-              const rect1 = el1.getBoundingClientRect();
-              const rect2 = el2.getBoundingClientRect();
-              const initialX = rect1.left + rect1.width / 2;
-              const initialY = rect1.top + rect1.height / 2;
-              line.setAttribute("x1", initialX);
-              line.setAttribute("y1", initialY);
-              line.setAttribute("x2", initialX);
-              line.setAttribute("y2", initialY);
-              svg.appendChild(line);
-              lines.push({
-                line,
-                el1,
-                el2,
-                animated: false
-                // Флаг для отслеживания анимации
-              });
+        const connections = document.querySelectorAll("[mind-connection]");
+        const lineThickness = 1;
+        const lineColor = "#666666";
+        connections.forEach((startEl) => {
+          const targetSelector = startEl.getAttribute("mind-connection");
+          const matchingElements = document.querySelectorAll(`[mind-connection="${targetSelector}"]`);
+          if (matchingElements.length >= 2) {
+            const endEl = matchingElements[1];
+            const isHorizontalAttr = startEl.getAttribute("data-start-horizontal");
+            const isHorizontalStart = isHorizontalAttr !== null ? isHorizontalAttr === "true" ? true : false : null;
+            let connection = connectionsData.find(
+              (data) => data.startEl === startEl && data.endEl === endEl
+            );
+            if (!connection) {
+              const pathElement = document.createElementNS("http://www.w3.org/2000/svg", "path");
+              pathElement.setAttribute("stroke", lineColor);
+              pathElement.setAttribute("stroke-width", lineThickness);
+              pathElement.setAttribute("fill", "none");
+              pathElement.classList.add("connection-line");
+              svg.appendChild(pathElement);
+              connection = {
+                startEl,
+                endEl,
+                pathElement,
+                isHorizontalStart
+              };
+              connectionsData.push(connection);
             }
+            updateLine(connection);
+          }
+        });
+      }
+      function updateLine(connection) {
+        const { startEl, endEl, pathElement, isHorizontalStart } = connection;
+        const startRect = startEl.getBoundingClientRect();
+        const endRect = endEl.getBoundingClientRect();
+        const x1 = startRect.left + startRect.width / 2 + window.scrollX;
+        const y1 = startRect.top + startRect.height / 2 + window.scrollY;
+        const x2 = endRect.left + endRect.width / 2 + window.scrollX;
+        const y2 = endRect.top + endRect.height / 2 + window.scrollY;
+        let path;
+        const currentLineStyle = lineStyles[currentLineStyleIndex];
+        if (currentLineStyle === "straight") {
+          path = `M ${x1} ${y1} L ${x2} ${y2}`;
+        } else if (currentLineStyle === "curved") {
+          const dx = (x2 - x1) / 2;
+          const dy = (y2 - y1) / 2;
+          path = `M ${x1} ${y1} Q ${x1} ${y1 + dy}, ${x1 + dx} ${y1 + dy} T ${x2} ${y2}`;
+        } else if (currentLineStyle === "grid") {
+          if (isHorizontalStart === null) {
+            path = `M ${x1} ${y1} L ${x2} ${y2}`;
+          } else if (isHorizontalStart) {
+            path = `M ${x1} ${y1} H ${x2} V ${y2}`;
+          } else {
+            path = `M ${x1} ${y1} V ${y2} H ${x2}`;
           }
         }
+        const previousPath = pathElement.getAttribute("d");
+        if (previousPath !== path) {
+          pathElement.animate([{ d: previousPath }, { d: path }], {
+            duration: 1e3,
+            fill: "forwards"
+          });
+          pathElement.setAttribute("d", path);
+        }
+      }
+      function updateAllLines() {
+        connectionsData.forEach((connection) => {
+          updateLine(connection);
+        });
+        requestAnimationFrame(updateAllLines);
+      }
+      function setLineStyle(styleName) {
+        const index = lineStyles.indexOf(styleName);
+        if (index !== -1) {
+          currentLineStyleIndex = index;
+          connectionsData.forEach((connection) => {
+            updateLine(connection);
+          });
+        }
+      }
+      function addHoverListeners() {
+        const hoverElements = document.querySelectorAll("[hover-lines-changer]");
+        hoverElements.forEach((element) => {
+          element.addEventListener("mouseenter", onHover);
+        });
+      }
+      function onHover(event) {
+        if (window.innerWidth >= 992) {
+          const element = event.currentTarget;
+          const newLineStyle = element.getAttribute("hover-lines-changer");
+          if (["straight", "grid", "fluid", "curved"].includes(newLineStyle)) {
+            const styleName = newLineStyle === "fluid" ? "curved" : newLineStyle;
+            setLineStyle(styleName);
+          }
+        }
+      }
+      drawConnections();
+      requestAnimationFrame(updateAllLines);
+      addHoverListeners();
+      window.addEventListener("resize", () => {
+        clearTimeout(window.drawConnectionsTimeout);
+        window.drawConnectionsTimeout = setTimeout(() => {
+          drawConnections();
+        }, 100);
       });
-      const animateLine = (lineObj) => {
-        const { line, el1, el2 } = lineObj;
-        const rect1 = el1.getBoundingClientRect();
-        const rect2 = el2.getBoundingClientRect();
-        const startX = rect1.left + rect1.width / 2;
-        const startY = rect1.top + rect1.height / 2;
-        const endX = rect2.left + rect2.width / 2;
-        const endY = rect2.top + rect2.height / 2;
-        const duration = 300;
-        const startTime = performance.now();
-        const animate = (currentTime) => {
-          const elapsed = currentTime - startTime;
-          const progress = Math.min(elapsed / duration, 1);
-          const currentX = startX + (endX - startX) * progress;
-          const currentY = startY + (endY - startY) * progress;
-          line.setAttribute("x2", currentX);
-          line.setAttribute("y2", currentY);
-          if (progress < 1) {
-            requestAnimationFrame(animate);
-          } else {
-            line.setAttribute("x2", endX);
-            line.setAttribute("y2", endY);
-            lineObj.animated = true;
-          }
-        };
-        requestAnimationFrame(animate);
-      };
-      setTimeout(() => {
-        lines.forEach((lineObj) => {
-          animateLine(lineObj);
+      const observer = new MutationObserver(() => {
+        connectionsData.forEach((connection) => {
+          updateLine(connection);
         });
-      }, 2500);
-      const updatePositions = () => {
-        lines.forEach(({ line, el1, el2, animated }) => {
-          const rect1 = el1.getBoundingClientRect();
-          const rect2 = el2.getBoundingClientRect();
-          const x1 = rect1.left + rect1.width / 2;
-          const y1 = rect1.top + rect1.height / 2;
-          const x2 = rect2.left + rect2.width / 2;
-          const y2 = rect2.top + rect2.height / 2;
-          line.setAttribute("x1", x1);
-          line.setAttribute("y1", y1);
-          if (animated) {
-            line.setAttribute("x2", x2);
-            line.setAttribute("y2", y2);
-          }
-        });
-        requestAnimationFrame(updatePositions);
-      };
-      updatePositions();
-    }
-  };
+      });
+      const config = { attributes: true, childList: true, subtree: true, characterData: true };
+      observer.observe(document.body, config);
+    }, 2500);
 
   // src/utils/stats-hero.ts
   var func_statsHero = () => {
@@ -459,16 +481,49 @@
     });
   };
 
+  // src/utils/toggl-class-trigger-target.ts
+  var func_togglClassTriggerTarget = () => {
+    const all_togglClassTriggerTarget = document.querySelectorAll("[toggl-class-trigger]");
+    if (all_togglClassTriggerTarget.length) {
+      all_togglClassTriggerTarget.forEach((trigger) => {
+        trigger.addEventListener("click", () => {
+          const triggerValue = trigger.getAttribute("toggl-class-trigger");
+          const targetElement = document.querySelector(`[toggl-class-target="${triggerValue}"]`);
+          if (targetElement) {
+            const className = targetElement.getAttribute("toggl-class-name");
+            if (className) {
+              targetElement.classList.toggle(className);
+            }
+          }
+        });
+      });
+    }
+  };
+
+  // src/utils/year-counter.ts
+  var func_yearCounter = () => {
+    const all_yearCounter = document.querySelectorAll("[year-counter]");
+    if (all_yearCounter.length) {
+      const currentYear = (/* @__PURE__ */ new Date()).getFullYear();
+      const yearsPassed = currentYear - 2016;
+      all_yearCounter.forEach((element) => {
+        element.textContent = yearsPassed;
+      });
+    }
+  };
+
   // src/index.ts
   window.Webflow ||= [];
   window.Webflow.push(() => {
-    func_mindConnections();
     func_heroForm();
     func_collapseButtons();
     func_heightTransition();
     func_syncClick();
     func_buttonTextToggl();
     func_statsHero();
+    func_yearCounter();
+    func_togglClassTriggerTarget();
+    (void 0)();
   });
 })();
 //# sourceMappingURL=index.js.map
