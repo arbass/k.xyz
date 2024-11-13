@@ -149,7 +149,7 @@ https: setTimeout(() => {
   }
 
   function onHover(event) {
-    if (window.innerWidth >= 992) {
+    if (window.innerWidth >= 768) {
       const element = event.currentTarget;
       const newLineStyle = element.getAttribute('hover-lines-changer');
       if (['straight', 'grid', 'fluid', 'curved'].includes(newLineStyle)) {
