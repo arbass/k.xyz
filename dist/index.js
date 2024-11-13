@@ -294,7 +294,8 @@
           svg.style.height = "100%";
           svg.style.pointerEvents = "none";
           svg.style.overflow = "visible";
-          document.body.appendChild(svg);
+          svg.style.zIndex = "0";
+          document.body.insertBefore(svg, document.body.firstChild);
         }
         const connections = document.querySelectorAll("[mind-connection]");
         const lineThickness = 1;

@@ -20,7 +20,9 @@ https: setTimeout(() => {
       svg.style.height = '100%';
       svg.style.pointerEvents = 'none'; // Чтобы SVG не перекрывал другие элементы
       svg.style.overflow = 'visible'; // Чтобы линии не обрезались
-      document.body.appendChild(svg);
+      svg.style.zIndex = '0'; // Устанавливаем z-index для SVG
+      // Вставляем SVG перед первым элементом body, чтобы линии были за элементами
+      document.body.insertBefore(svg, document.body.firstChild);
     }
 
     const connections = document.querySelectorAll('[mind-connection]');
@@ -88,7 +90,7 @@ https: setTimeout(() => {
       // Прямая линия
       path = `M ${x1} ${y1} L ${x2} ${y2}`;
     } else if (currentLineStyle === 'curved') {
-      // Плавная кривая
+      // Плавная кривая (используем ваш оригинальный код)
       const dx = (x2 - x1) / 2;
       const dy = (y2 - y1) / 2;
       path = `M ${x1} ${y1} Q ${x1} ${y1 + dy}, ${x1 + dx} ${y1 + dy} T ${x2} ${y2}`;
