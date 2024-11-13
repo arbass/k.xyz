@@ -277,140 +277,180 @@
   func_heroForm();
 
   // src/utils/mind-connections-leader.ts
-  https:
-    setTimeout(() => {
-      let currentLineStyleIndex = 1;
-      const lineStyles = ["straight", "grid", "curved"];
-      const connectionsData = [];
-      function drawConnections() {
-        let svg = document.getElementById("connection-svg");
-        if (!svg) {
-          svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-          svg.setAttribute("id", "connection-svg");
-          svg.style.position = "absolute";
-          svg.style.top = "0";
-          svg.style.left = "0";
-          svg.style.width = "100%";
-          svg.style.height = "100%";
-          svg.style.pointerEvents = "none";
-          svg.style.overflow = "visible";
-          svg.style.zIndex = "0";
-          document.body.insertBefore(svg, document.body.firstChild);
-        }
-        const connections = document.querySelectorAll("[mind-connection]");
-        const lineThickness = 1;
-        const lineColor = "#666666";
-        connections.forEach((startEl) => {
-          const targetSelector = startEl.getAttribute("mind-connection");
-          const matchingElements = document.querySelectorAll(`[mind-connection="${targetSelector}"]`);
-          if (matchingElements.length >= 2) {
-            const endEl = matchingElements[1];
-            const isHorizontalAttr = startEl.getAttribute("data-start-horizontal");
-            const isHorizontalStart = isHorizontalAttr !== null ? isHorizontalAttr === "true" ? true : false : null;
-            let connection = connectionsData.find(
-              (data) => data.startEl === startEl && data.endEl === endEl
-            );
-            if (!connection) {
-              const pathElement = document.createElementNS("http://www.w3.org/2000/svg", "path");
-              pathElement.setAttribute("stroke", lineColor);
-              pathElement.setAttribute("stroke-width", lineThickness);
-              pathElement.setAttribute("fill", "none");
-              pathElement.classList.add("connection-line");
-              svg.appendChild(pathElement);
-              connection = {
-                startEl,
-                endEl,
-                pathElement,
-                isHorizontalStart
-              };
-              connectionsData.push(connection);
-            }
-            updateLine(connection);
-          }
-        });
+  setTimeout(() => {
+    let currentLineStyleIndex = 1;
+    const lineStyles = ["straight", "grid", "curved"];
+    const connectionsData = [];
+    const breakpoints = [480, 769, 992];
+    let previousWindowWidth = window.innerWidth;
+    let shouldUpdateLines = true;
+    function drawConnections() {
+      let svg = document.getElementById("connection-svg");
+      if (!svg) {
+        svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        svg.setAttribute("id", "connection-svg");
+        svg.style.position = "absolute";
+        svg.style.top = "0";
+        svg.style.left = "0";
+        svg.style.width = "100%";
+        svg.style.height = "100%";
+        svg.style.pointerEvents = "none";
+        svg.style.overflow = "visible";
+        svg.style.zIndex = "0";
+        document.body.insertBefore(svg, document.body.firstChild);
       }
-      function updateLine(connection) {
-        const { startEl, endEl, pathElement, isHorizontalStart } = connection;
-        const startRect = startEl.getBoundingClientRect();
-        const endRect = endEl.getBoundingClientRect();
-        const x1 = startRect.left + startRect.width / 2 + window.scrollX;
-        const y1 = startRect.top + startRect.height / 2 + window.scrollY;
-        const x2 = endRect.left + endRect.width / 2 + window.scrollX;
-        const y2 = endRect.top + endRect.height / 2 + window.scrollY;
-        let path;
-        const currentLineStyle = lineStyles[currentLineStyleIndex];
-        if (currentLineStyle === "straight") {
+      const connections = document.querySelectorAll("[mind-connection]");
+      const lineThickness = 1;
+      const lineColor = "#666666";
+      connections.forEach((startEl) => {
+        const targetSelector = startEl.getAttribute("mind-connection");
+        const matchingElements = document.querySelectorAll(`[mind-connection="${targetSelector}"]`);
+        if (matchingElements.length >= 2) {
+          const endEl = matchingElements[1];
+          const isMobile = window.innerWidth < 768;
+          const startElHiddenOnMobile = startEl.classList.contains("hide-on-mobile");
+          const endElHiddenOnMobile = endEl.classList.contains("hide-on-mobile");
+          if (isMobile && (startElHiddenOnMobile || endElHiddenOnMobile)) {
+            return;
+          }
+          const isHorizontalAttr = startEl.getAttribute("data-start-horizontal");
+          const isHorizontalStart = isHorizontalAttr !== null ? isHorizontalAttr === "true" ? true : false : null;
+          let connection = connectionsData.find(
+            (data) => data.startEl === startEl && data.endEl === endEl
+          );
+          if (!connection) {
+            const pathElement = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            pathElement.setAttribute("stroke", lineColor);
+            pathElement.setAttribute("stroke-width", lineThickness);
+            pathElement.setAttribute("fill", "none");
+            pathElement.classList.add("connection-line");
+            svg.appendChild(pathElement);
+            connection = {
+              startEl,
+              endEl,
+              pathElement,
+              isHorizontalStart
+            };
+            connectionsData.push(connection);
+          }
+          updateLine(connection);
+        }
+      });
+    }
+    function updateLine(connection) {
+      const { startEl, endEl, pathElement, isHorizontalStart } = connection;
+      const startRect = startEl.getBoundingClientRect();
+      const endRect = endEl.getBoundingClientRect();
+      const x1 = startRect.left + startRect.width / 2 + window.scrollX;
+      const y1 = startRect.top + startRect.height / 2 + window.scrollY;
+      const x2 = endRect.left + endRect.width / 2 + window.scrollX;
+      const y2 = endRect.top + endRect.height / 2 + window.scrollY;
+      let path;
+      const currentLineStyle = lineStyles[currentLineStyleIndex];
+      if (currentLineStyle === "straight") {
+        path = `M ${x1} ${y1} L ${x2} ${y2}`;
+      } else if (currentLineStyle === "curved") {
+        const dx = (x2 - x1) / 2;
+        const dy = (y2 - y1) / 2;
+        path = `M ${x1} ${y1} Q ${x1} ${y1 + dy}, ${x1 + dx} ${y1 + dy} T ${x2} ${y2}`;
+      } else if (currentLineStyle === "grid") {
+        if (isHorizontalStart === null) {
           path = `M ${x1} ${y1} L ${x2} ${y2}`;
-        } else if (currentLineStyle === "curved") {
-          const dx = (x2 - x1) / 2;
-          const dy = (y2 - y1) / 2;
-          path = `M ${x1} ${y1} Q ${x1} ${y1 + dy}, ${x1 + dx} ${y1 + dy} T ${x2} ${y2}`;
-        } else if (currentLineStyle === "grid") {
-          if (isHorizontalStart === null) {
-            path = `M ${x1} ${y1} L ${x2} ${y2}`;
-          } else if (isHorizontalStart) {
-            path = `M ${x1} ${y1} H ${x2} V ${y2}`;
-          } else {
-            path = `M ${x1} ${y1} V ${y2} H ${x2}`;
-          }
-        }
-        const previousPath = pathElement.getAttribute("d");
-        if (previousPath !== path) {
-          pathElement.animate([{ d: previousPath }, { d: path }], {
-            duration: 1e3,
-            fill: "forwards"
-          });
-          pathElement.setAttribute("d", path);
+        } else if (isHorizontalStart) {
+          path = `M ${x1} ${y1} H ${x2} V ${y2}`;
+        } else {
+          path = `M ${x1} ${y1} V ${y2} H ${x2}`;
         }
       }
-      function updateAllLines() {
-        connectionsData.forEach((connection) => {
-          updateLine(connection);
+      const previousPath = pathElement.getAttribute("d");
+      if (previousPath !== path) {
+        pathElement.animate([{ d: previousPath }, { d: path }], {
+          duration: 1e3,
+          fill: "forwards"
         });
-        requestAnimationFrame(updateAllLines);
+        pathElement.setAttribute("d", path);
       }
-      function setLineStyle(styleName) {
-        const index = lineStyles.indexOf(styleName);
-        if (index !== -1) {
-          currentLineStyleIndex = index;
-          connectionsData.forEach((connection) => {
-            updateLine(connection);
-          });
-        }
-      }
-      function addHoverListeners() {
-        const hoverElements = document.querySelectorAll("[hover-lines-changer]");
-        hoverElements.forEach((element) => {
-          element.addEventListener("mouseenter", onHover);
-        });
-      }
-      function onHover(event) {
-        if (window.innerWidth >= 768) {
-          const element = event.currentTarget;
-          const newLineStyle = element.getAttribute("hover-lines-changer");
-          if (["straight", "grid", "fluid", "curved"].includes(newLineStyle)) {
-            const styleName = newLineStyle === "fluid" ? "curved" : newLineStyle;
-            setLineStyle(styleName);
-          }
-        }
-      }
-      drawConnections();
+    }
+    function updateAllLines() {
+      if (!shouldUpdateLines)
+        return;
+      connectionsData.forEach((connection) => {
+        updateLine(connection);
+      });
       requestAnimationFrame(updateAllLines);
-      addHoverListeners();
-      window.addEventListener("resize", () => {
-        clearTimeout(window.drawConnectionsTimeout);
-        window.drawConnectionsTimeout = setTimeout(() => {
-          drawConnections();
-        }, 100);
-      });
-      const observer = new MutationObserver(() => {
+    }
+    function setLineStyle(styleName) {
+      const index = lineStyles.indexOf(styleName);
+      if (index !== -1) {
+        currentLineStyleIndex = index;
         connectionsData.forEach((connection) => {
           updateLine(connection);
         });
+      }
+    }
+    function addHoverListeners() {
+      const hoverElements = document.querySelectorAll("[hover-lines-changer]");
+      hoverElements.forEach((element) => {
+        element.addEventListener("mouseenter", onHover);
       });
-      const config = { attributes: true, childList: true, subtree: true, characterData: true };
-      observer.observe(document.body, config);
-    }, 2500);
+    }
+    function onHover(event) {
+      if (window.innerWidth >= 768) {
+        const element = event.currentTarget;
+        const newLineStyle = element.getAttribute("hover-lines-changer");
+        if (["straight", "grid", "fluid", "curved"].includes(newLineStyle)) {
+          const styleName = newLineStyle === "fluid" ? "curved" : newLineStyle;
+          setLineStyle(styleName);
+        }
+      }
+    }
+    function restartScript() {
+      const svg = document.getElementById("connection-svg");
+      if (svg) {
+        svg.parentNode.removeChild(svg);
+      }
+      connectionsData.length = 0;
+      shouldUpdateLines = false;
+      setTimeout(() => {
+        previousWindowWidth = window.innerWidth;
+        shouldUpdateLines = true;
+        drawConnections();
+        addHoverListeners();
+      }, 1e3);
+    }
+    drawConnections();
+    requestAnimationFrame(updateAllLines);
+    addHoverListeners();
+    window.addEventListener("resize", () => {
+      clearTimeout(window.resizeTimeout);
+      window.resizeTimeout = setTimeout(() => {
+        handleResize();
+      }, 100);
+    });
+    function handleResize() {
+      const currentWindowWidth = window.innerWidth;
+      let crossedBreakpoint = false;
+      for (const breakpoint of breakpoints) {
+        if (previousWindowWidth < breakpoint && currentWindowWidth >= breakpoint || previousWindowWidth >= breakpoint && currentWindowWidth < breakpoint) {
+          crossedBreakpoint = true;
+          break;
+        }
+      }
+      if (crossedBreakpoint) {
+        restartScript();
+      } else {
+        drawConnections();
+      }
+      previousWindowWidth = currentWindowWidth;
+    }
+    const observer = new MutationObserver(() => {
+      connectionsData.forEach((connection) => {
+        updateLine(connection);
+      });
+    });
+    const config = { attributes: true, childList: true, subtree: true, characterData: true };
+    observer.observe(document.body, config);
+  }, 2500);
 
   // src/utils/stats-hero.ts
   var func_statsHero = () => {

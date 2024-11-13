@@ -1,10 +1,11 @@
-//chatgpt.com/c/6734b5cd-8f54-8002-882d-9b9a64349588
-
 // Задержка запуска скрипта на 2.5 секунды
-https: setTimeout(() => {
+setTimeout(() => {
   let currentLineStyleIndex = 1; // Индекс текущего стиля линии ('grid')
   const lineStyles = ['straight', 'grid', 'curved']; // Массив стилей линий
   const connectionsData = []; // Для хранения данных о соединениях
+  const breakpoints = [480, 769, 992]; // Контрольные точки разрешений
+  let previousWindowWidth = window.innerWidth; // Предыдущая ширина окна
+  let shouldUpdateLines = true; // Флаг для контроля обновления линий
 
   // Функция для отрисовки всех соединений
   function drawConnections() {
@@ -39,6 +40,17 @@ https: setTimeout(() => {
       // Предполагается, что первый элемент — начало, а второй — конец
       if (matchingElements.length >= 2) {
         const endEl = matchingElements[1];
+
+        // Проверяем, нужно ли пропустить отрисовку линии на мобильных устройствах
+        const isMobile = window.innerWidth < 768;
+        const startElHiddenOnMobile = startEl.classList.contains('hide-on-mobile');
+        const endElHiddenOnMobile = endEl.classList.contains('hide-on-mobile');
+
+        if (isMobile && (startElHiddenOnMobile || endElHiddenOnMobile)) {
+          // Если условие выполняется, пропускаем отрисовку этой линии
+          return;
+        }
+
         const isHorizontalAttr = startEl.getAttribute('data-start-horizontal');
         const isHorizontalStart =
           isHorizontalAttr !== null ? (isHorizontalAttr === 'true' ? true : false) : null;
@@ -121,6 +133,7 @@ https: setTimeout(() => {
 
   // Функция для обновления всех линий (используется для анимации)
   function updateAllLines() {
+    if (!shouldUpdateLines) return;
     connectionsData.forEach((connection) => {
       updateLine(connection);
     });
@@ -159,6 +172,29 @@ https: setTimeout(() => {
     }
   }
 
+  // Функция для перезапуска скрипта
+  function restartScript() {
+    // Удаляем SVG элемент
+    const svg = document.getElementById('connection-svg');
+    if (svg) {
+      svg.parentNode.removeChild(svg);
+    }
+
+    // Очищаем данные о соединениях
+    connectionsData.length = 0;
+
+    // Останавливаем обновление линий
+    shouldUpdateLines = false;
+
+    // Ждем 1 секунду и запускаем скрипт заново
+    setTimeout(() => {
+      previousWindowWidth = window.innerWidth; // Обновляем ширину окна
+      shouldUpdateLines = true;
+      drawConnections();
+      addHoverListeners();
+    }, 1000);
+  }
+
   // Первая отрисовка
   drawConnections();
   // Запускаем обновление линий
@@ -169,11 +205,38 @@ https: setTimeout(() => {
   // Перерисовка при изменении размера окна
   window.addEventListener('resize', () => {
     // Используем debounce, чтобы не вызывать функцию слишком часто
-    clearTimeout(window.drawConnectionsTimeout);
-    window.drawConnectionsTimeout = setTimeout(() => {
-      drawConnections();
+    clearTimeout(window.resizeTimeout);
+    window.resizeTimeout = setTimeout(() => {
+      handleResize();
     }, 100);
   });
+
+  function handleResize() {
+    const currentWindowWidth = window.innerWidth;
+
+    // Проверяем, пересекли ли мы какую-либо из контрольных точек
+    let crossedBreakpoint = false;
+
+    for (const breakpoint of breakpoints) {
+      if (
+        (previousWindowWidth < breakpoint && currentWindowWidth >= breakpoint) ||
+        (previousWindowWidth >= breakpoint && currentWindowWidth < breakpoint)
+      ) {
+        crossedBreakpoint = true;
+        break;
+      }
+    }
+
+    if (crossedBreakpoint) {
+      // Перезапускаем скрипт
+      restartScript();
+    } else {
+      // Просто перерисовываем соединения
+      drawConnections();
+    }
+
+    previousWindowWidth = currentWindowWidth;
+  }
 
   // Наблюдатель за изменениями в DOM
   const observer = new MutationObserver(() => {
