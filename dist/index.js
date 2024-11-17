@@ -46,6 +46,13 @@
     }
   };
 
+  // src/utils/func_card-fly.ts
+  var func_cardFly = () => {
+    const el_cardFly = document.querySelectorAll("[card-fly-parent]");
+    if (el_cardFly.length) {
+    }
+  };
+
   // src/utils/height-transition.ts
   var func_heightTransition = () => {
     const allElements = document.querySelectorAll("[height-transition]");
@@ -344,17 +351,17 @@
         const { startEl, endEl, pathElement, isHorizontalStart } = connection;
         const startRect = startEl.getBoundingClientRect();
         const endRect = endEl.getBoundingClientRect();
-        const x1 = startRect.left + startRect.width / 2 + window.scrollX;
-        const y1 = startRect.top + startRect.height / 2 + window.scrollY;
-        const x2 = endRect.left + endRect.width / 2 + window.scrollX;
-        const y2 = endRect.top + endRect.height / 2 + window.scrollY;
+        const x1 = +(startRect.left + startRect.width / 2 + window.scrollX).toFixed(2);
+        const y1 = +(startRect.top + startRect.height / 2 + window.scrollY).toFixed(2);
+        const x2 = +(endRect.left + endRect.width / 2 + window.scrollX).toFixed(2);
+        const y2 = +(endRect.top + endRect.height / 2 + window.scrollY).toFixed(2);
         let path;
         const currentLineStyle = lineStyles[currentLineStyleIndex];
         if (currentLineStyle === "straight") {
           path = `M ${x1} ${y1} L ${x2} ${y2}`;
         } else if (currentLineStyle === "curved") {
-          const dx = (x2 - x1) / 2;
-          const dy = (y2 - y1) / 2;
+          const dx = +((x2 - x1) / 2).toFixed(2);
+          const dy = +((y2 - y1) / 2).toFixed(2);
           path = `M ${x1} ${y1} Q ${x1} ${y1 + dy}, ${x1 + dx} ${y1 + dy} T ${x2} ${y2}`;
         } else if (currentLineStyle === "grid") {
           if (isHorizontalStart === null) {
@@ -366,7 +373,10 @@
           }
         }
         const previousPath = pathElement.getAttribute("d");
-        if (previousPath !== null && previousPath !== path) {
+        if (previousPath === path || previousPath && previousPath.replace(/\s/g, "") === path.replace(/\s/g, "") || Math.abs(x1 - x2) < 1 && Math.abs(y1 - y2) < 1) {
+          return;
+        }
+        if (previousPath && previousPath !== path) {
           pathElement.animate([{ d: previousPath }, { d: path }], {
             duration: 1e3,
             fill: "forwards"
@@ -561,6 +571,7 @@
     func_yearCounter();
     func_togglClassTriggerTarget();
     func_mindConnectionsLeader();
+    func_cardFly();
   });
 })();
 //# sourceMappingURL=index.js.map

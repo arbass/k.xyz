@@ -2,7 +2,7 @@
 // import { func_interactiveZone } from '$utils/interactive-zone';
 import { func_buttonTextToggl } from '$utils/button-text-toggl';
 import { func_collapseButtons } from '$utils/collapse-buttons';
-// import { func_cardFly } from '$utils/func_card-fly';
+import { func_cardFly } from '$utils/func_card-fly';
 import { func_heightTransition } from '$utils/height-transition';
 import { func_heroForm } from '$utils/hero-form';
 // import { func_mindConnections } from '$utils/mind-connections';
@@ -26,5 +26,5 @@ window.Webflow.push(() => {
   func_yearCounter();
   func_togglClassTriggerTarget();
   func_mindConnectionsLeader();
-  // func_cardFly();
+  func_cardFly();
 });
