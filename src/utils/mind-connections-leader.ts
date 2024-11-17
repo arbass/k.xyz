@@ -21,7 +21,7 @@ setTimeout(() => {
       svg.style.height = '100%';
       svg.style.pointerEvents = 'none'; // Чтобы SVG не перекрывал другие элементы
       svg.style.overflow = 'visible'; // Чтобы линии не обрезались
-      svg.style.zIndex = '0'; // Устанавливаем z-index для SVG
+      svg.style.zIndex = '-1'; // Устанавливаем отрицательный z-index для SVG
       // Вставляем SVG перед первым элементом body, чтобы линии были за элементами
       document.body.insertBefore(svg, document.body.firstChild);
     }
