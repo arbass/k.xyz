@@ -46,6 +46,120 @@
     }
   };
 
+  // src/utils/func_card-fly.ts
+  var func_cardFly = () => {
+    console.log("func_cardFly initialized");
+    const all_cardFly = document.querySelectorAll("[card-fly-parent]");
+    console.log("all_cardFly:", all_cardFly);
+    if (all_cardFly.length) {
+      const toggle = document.querySelector("[card-fly-toggl]");
+      console.log("test");
+      const grid = document.querySelector("[card-fly-grid]");
+      const cards = grid.querySelectorAll("[card-fly-child]");
+      console.log("toggle:", toggle);
+      console.log("grid:", grid);
+      console.log("cards:", cards);
+      let animationId = null;
+      let floatingCards = [];
+      grid.style.display = "grid";
+      grid.style.gridTemplateColumns = "repeat(auto-fill, minmax(200px, 1fr))";
+      grid.style.gridGap = "20px";
+      grid.style.position = "relative";
+      grid.style.transition = "all 0.5s ease";
+      toggle.addEventListener("click", () => {
+        console.log("Toggle clicked");
+        if (grid.classList.contains("floating")) {
+          console.log("Switching back to grid mode");
+          grid.classList.remove("floating");
+          grid.style.display = "grid";
+          if (animationId) {
+            cancelAnimationFrame(animationId);
+            animationId = null;
+            console.log("Animation stopped");
+          }
+          cards.forEach((card, index) => {
+            console.log(`Resetting styles for card ${index}`);
+            card.style.position = "";
+            card.style.left = "";
+            card.style.top = "";
+            card.style.opacity = "";
+            card.style.transition = "";
+          });
+        } else {
+          let animate2 = function(time) {
+            animationId = requestAnimationFrame(animate2);
+            floatingCards.forEach((cardObj, index) => {
+              if (!cardObj.startTime) {
+                cardObj.startTime = time + cardObj.delay;
+                return;
+              }
+              const elapsed = time - cardObj.startTime;
+              if (elapsed < 0) {
+                return;
+              }
+              cardObj.y -= cardObj.speed;
+              const totalDistance = gridHeight + cardObj.height * 2;
+              const progress = (gridHeight - cardObj.y) / totalDistance;
+              if (progress < 0.1) {
+                cardObj.opacity = progress / 0.1;
+              } else if (progress > 0.9) {
+                cardObj.opacity = (1 - progress) / 0.1;
+              } else {
+                cardObj.opacity = 1;
+              }
+              cardObj.element.style.top = `${cardObj.y}px`;
+              cardObj.element.style.opacity = cardObj.opacity;
+              if (cardObj.y + cardObj.height < 0) {
+                console.log(`Card ${index} reached top, resetting position`);
+                cardObj.y = gridHeight;
+                cardObj.startTime = time + cardObj.delay;
+              }
+            });
+          };
+          var animate = animate2;
+          console.log("Switching to floating mode");
+          grid.classList.add("floating");
+          grid.style.display = "block";
+          const gridWidth = grid.clientWidth;
+          const gridHeight = grid.clientHeight;
+          console.log("gridWidth:", gridWidth);
+          console.log("gridHeight:", gridHeight);
+          floatingCards = [];
+          cards.forEach((card, index) => {
+            console.log(`Setting up card ${index}`);
+            card.style.position = "absolute";
+            const cardWidth = card.offsetWidth;
+            const cardHeight = card.offsetHeight;
+            const randomLeft = Math.random() * (gridWidth - cardWidth);
+            card.style.left = `${randomLeft}px`;
+            const startY = gridHeight;
+            card.style.top = `${startY}px`;
+            card.style.opacity = "0";
+            card.style.transition = "opacity 1s ease-in-out";
+            const speed = 0.5 + Math.random();
+            const delay = Math.random() * 5e3;
+            console.log(`Card ${index} speed: ${speed}, delay: ${delay}`);
+            floatingCards.push({
+              element: card,
+              x: randomLeft,
+              y: startY,
+              width: cardWidth,
+              height: cardHeight,
+              speed,
+              delay,
+              startTime: null,
+              opacity: 0
+            });
+          });
+          animationId = requestAnimationFrame(animate2);
+          console.log("Animation started");
+        }
+      });
+    } else {
+      console.log("No elements found with [card-fly-parent]");
+    }
+  };
+
   // src/utils/height-transition.ts
   var func_heightTransition = () => {
     const allElements = document.querySelectorAll("[height-transition]");
@@ -565,6 +679,7 @@
     func_yearCounter();
     func_togglClassTriggerTarget();
     (void 0)();
+    func_cardFly();
   });
 })();
 //# sourceMappingURL=index.js.map
