@@ -46,120 +46,6 @@
     }
   };
 
-  // src/utils/func_card-fly.ts
-  var func_cardFly = () => {
-    console.log("func_cardFly initialized");
-    const all_cardFly = document.querySelectorAll("[card-fly-parent]");
-    console.log("all_cardFly:", all_cardFly);
-    if (all_cardFly.length) {
-      const toggle = document.querySelector("[card-fly-toggl]");
-      console.log("test");
-      const grid = document.querySelector("[card-fly-grid]");
-      const cards = grid.querySelectorAll("[card-fly-child]");
-      console.log("toggle:", toggle);
-      console.log("grid:", grid);
-      console.log("cards:", cards);
-      let animationId = null;
-      let floatingCards = [];
-      grid.style.display = "grid";
-      grid.style.gridTemplateColumns = "repeat(auto-fill, minmax(200px, 1fr))";
-      grid.style.gridGap = "20px";
-      grid.style.position = "relative";
-      grid.style.transition = "all 0.5s ease";
-      toggle.addEventListener("click", () => {
-        console.log("Toggle clicked");
-        if (grid.classList.contains("floating")) {
-          console.log("Switching back to grid mode");
-          grid.classList.remove("floating");
-          grid.style.display = "grid";
-          if (animationId) {
-            cancelAnimationFrame(animationId);
-            animationId = null;
-            console.log("Animation stopped");
-          }
-          cards.forEach((card, index) => {
-            console.log(`Resetting styles for card ${index}`);
-            card.style.position = "";
-            card.style.left = "";
-            card.style.top = "";
-            card.style.opacity = "";
-            card.style.transition = "";
-          });
-        } else {
-          let animate2 = function(time) {
-            animationId = requestAnimationFrame(animate2);
-            floatingCards.forEach((cardObj, index) => {
-              if (!cardObj.startTime) {
-                cardObj.startTime = time + cardObj.delay;
-                return;
-              }
-              const elapsed = time - cardObj.startTime;
-              if (elapsed < 0) {
-                return;
-              }
-              cardObj.y -= cardObj.speed;
-              const totalDistance = gridHeight + cardObj.height * 2;
-              const progress = (gridHeight - cardObj.y) / totalDistance;
-              if (progress < 0.1) {
-                cardObj.opacity = progress / 0.1;
-              } else if (progress > 0.9) {
-                cardObj.opacity = (1 - progress) / 0.1;
-              } else {
-                cardObj.opacity = 1;
-              }
-              cardObj.element.style.top = `${cardObj.y}px`;
-              cardObj.element.style.opacity = cardObj.opacity;
-              if (cardObj.y + cardObj.height < 0) {
-                console.log(`Card ${index} reached top, resetting position`);
-                cardObj.y = gridHeight;
-                cardObj.startTime = time + cardObj.delay;
-              }
-            });
-          };
-          var animate = animate2;
-          console.log("Switching to floating mode");
-          grid.classList.add("floating");
-          grid.style.display = "block";
-          const gridWidth = grid.clientWidth;
-          const gridHeight = grid.clientHeight;
-          console.log("gridWidth:", gridWidth);
-          console.log("gridHeight:", gridHeight);
-          floatingCards = [];
-          cards.forEach((card, index) => {
-            console.log(`Setting up card ${index}`);
-            card.style.position = "absolute";
-            const cardWidth = card.offsetWidth;
-            const cardHeight = card.offsetHeight;
-            const randomLeft = Math.random() * (gridWidth - cardWidth);
-            card.style.left = `${randomLeft}px`;
-            const startY = gridHeight;
-            card.style.top = `${startY}px`;
-            card.style.opacity = "0";
-            card.style.transition = "opacity 1s ease-in-out";
-            const speed = 0.5 + Math.random();
-            const delay = Math.random() * 5e3;
-            console.log(`Card ${index} speed: ${speed}, delay: ${delay}`);
-            floatingCards.push({
-              element: card,
-              x: randomLeft,
-              y: startY,
-              width: cardWidth,
-              height: cardHeight,
-              speed,
-              delay,
-              startTime: null,
-              opacity: 0
-            });
-          });
-          animationId = requestAnimationFrame(animate2);
-          console.log("Animation started");
-        }
-      });
-    } else {
-      console.log("No elements found with [card-fly-parent]");
-    }
-  };
-
   // src/utils/height-transition.ts
   var func_heightTransition = () => {
     const allElements = document.querySelectorAll("[height-transition]");
@@ -391,180 +277,182 @@
   func_heroForm();
 
   // src/utils/mind-connections-leader.ts
-  setTimeout(() => {
-    let currentLineStyleIndex = 1;
-    const lineStyles = ["straight", "grid", "curved"];
-    const connectionsData = [];
-    const breakpoints = [480, 769, 992];
-    let previousWindowWidth = window.innerWidth;
-    let shouldUpdateLines = true;
-    function drawConnections() {
-      let svg = document.getElementById("connection-svg");
-      if (!svg) {
-        svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-        svg.setAttribute("id", "connection-svg");
-        svg.style.position = "absolute";
-        svg.style.top = "0";
-        svg.style.left = "0";
-        svg.style.width = "100%";
-        svg.style.height = "100%";
-        svg.style.pointerEvents = "none";
-        svg.style.overflow = "visible";
-        svg.style.zIndex = "-1";
-        document.body.insertBefore(svg, document.body.firstChild);
-      }
-      const connections = document.querySelectorAll("[mind-connection]");
-      const lineThickness = 1;
-      const lineColor = "#666666";
-      connections.forEach((startEl) => {
-        const targetSelector = startEl.getAttribute("mind-connection");
-        const matchingElements = document.querySelectorAll(`[mind-connection="${targetSelector}"]`);
-        if (matchingElements.length >= 2) {
-          const endEl = matchingElements[1];
-          const isMobile = window.innerWidth < 768;
-          const startElHiddenOnMobile = startEl.classList.contains("hide-on-mobile");
-          const endElHiddenOnMobile = endEl.classList.contains("hide-on-mobile");
-          if (isMobile && (startElHiddenOnMobile || endElHiddenOnMobile)) {
-            return;
-          }
-          const isHorizontalAttr = startEl.getAttribute("data-start-horizontal");
-          const isHorizontalStart = isHorizontalAttr !== null ? isHorizontalAttr === "true" ? true : false : null;
-          let connection = connectionsData.find(
-            (data) => data.startEl === startEl && data.endEl === endEl
-          );
-          if (!connection) {
-            const pathElement = document.createElementNS("http://www.w3.org/2000/svg", "path");
-            pathElement.setAttribute("stroke", lineColor);
-            pathElement.setAttribute("stroke-width", lineThickness);
-            pathElement.setAttribute("fill", "none");
-            pathElement.classList.add("connection-line");
-            svg.appendChild(pathElement);
-            connection = {
-              startEl,
-              endEl,
-              pathElement,
-              isHorizontalStart
-            };
-            connectionsData.push(connection);
-          }
-          updateLine(connection);
+  var func_mindConnectionsLeader = () => {
+    setTimeout(() => {
+      let currentLineStyleIndex = 1;
+      const lineStyles = ["straight", "grid", "curved"];
+      const connectionsData = [];
+      const breakpoints = [480, 769, 992];
+      let previousWindowWidth = window.innerWidth;
+      let shouldUpdateLines = true;
+      function drawConnections() {
+        let svg = document.getElementById("connection-svg");
+        if (!svg) {
+          svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+          svg.setAttribute("id", "connection-svg");
+          svg.style.position = "absolute";
+          svg.style.top = "0";
+          svg.style.left = "0";
+          svg.style.width = "100%";
+          svg.style.height = "100%";
+          svg.style.pointerEvents = "none";
+          svg.style.overflow = "visible";
+          svg.style.zIndex = "-1";
+          document.body.insertBefore(svg, document.body.firstChild);
         }
-      });
-    }
-    function updateLine(connection) {
-      const { startEl, endEl, pathElement, isHorizontalStart } = connection;
-      const startRect = startEl.getBoundingClientRect();
-      const endRect = endEl.getBoundingClientRect();
-      const x1 = startRect.left + startRect.width / 2 + window.scrollX;
-      const y1 = startRect.top + startRect.height / 2 + window.scrollY;
-      const x2 = endRect.left + endRect.width / 2 + window.scrollX;
-      const y2 = endRect.top + endRect.height / 2 + window.scrollY;
-      let path;
-      const currentLineStyle = lineStyles[currentLineStyleIndex];
-      if (currentLineStyle === "straight") {
-        path = `M ${x1} ${y1} L ${x2} ${y2}`;
-      } else if (currentLineStyle === "curved") {
-        const dx = (x2 - x1) / 2;
-        const dy = (y2 - y1) / 2;
-        path = `M ${x1} ${y1} Q ${x1} ${y1 + dy}, ${x1 + dx} ${y1 + dy} T ${x2} ${y2}`;
-      } else if (currentLineStyle === "grid") {
-        if (isHorizontalStart === null) {
-          path = `M ${x1} ${y1} L ${x2} ${y2}`;
-        } else if (isHorizontalStart) {
-          path = `M ${x1} ${y1} H ${x2} V ${y2}`;
-        } else {
-          path = `M ${x1} ${y1} V ${y2} H ${x2}`;
-        }
-      }
-      const previousPath = pathElement.getAttribute("d");
-      if (previousPath !== path) {
-        pathElement.animate([{ d: previousPath }, { d: path }], {
-          duration: 1e3,
-          fill: "forwards"
+        const connections = document.querySelectorAll("[mind-connection]");
+        const lineThickness = 1;
+        const lineColor = "#666666";
+        connections.forEach((startEl) => {
+          const targetSelectors = startEl.getAttribute("mind-connection").split(",").map((selector) => selector.trim());
+          targetSelectors.forEach((targetSelector) => {
+            const matchingElements = document.querySelectorAll(
+              `[mind-connection~="${targetSelector}"]`
+            );
+            if (matchingElements.length > 0) {
+              const endEl = matchingElements[0];
+              const isMobile = window.innerWidth < 768;
+              const startElHiddenOnMobile = startEl.classList.contains("hide-on-mobile");
+              const endElHiddenOnMobile = endEl.classList.contains("hide-on-mobile");
+              if (isMobile && (startElHiddenOnMobile || endElHiddenOnMobile)) {
+                return;
+              }
+              const isHorizontalAttr = startEl.getAttribute("data-start-horizontal");
+              const isHorizontalStart = isHorizontalAttr !== null ? isHorizontalAttr === "true" ? true : false : null;
+              let connection = connectionsData.find(
+                (data) => data.startEl === startEl && data.endEl === endEl
+              );
+              if (!connection) {
+                const pathElement = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                pathElement.setAttribute("stroke", lineColor);
+                pathElement.setAttribute("stroke-width", lineThickness);
+                pathElement.setAttribute("fill", "none");
+                pathElement.classList.add("connection-line");
+                svg.appendChild(pathElement);
+                connection = {
+                  startEl,
+                  endEl,
+                  pathElement,
+                  isHorizontalStart
+                };
+                connectionsData.push(connection);
+              }
+              updateLine(connection);
+            }
+          });
         });
-        pathElement.setAttribute("d", path);
       }
-    }
-    function updateAllLines() {
-      if (!shouldUpdateLines)
-        return;
-      connectionsData.forEach((connection) => {
-        updateLine(connection);
-      });
-      requestAnimationFrame(updateAllLines);
-    }
-    function setLineStyle(styleName) {
-      const index = lineStyles.indexOf(styleName);
-      if (index !== -1) {
-        currentLineStyleIndex = index;
+      function updateLine(connection) {
+        const { startEl, endEl, pathElement, isHorizontalStart } = connection;
+        const startRect = startEl.getBoundingClientRect();
+        const endRect = endEl.getBoundingClientRect();
+        const x1 = startRect.left + startRect.width / 2 + window.scrollX;
+        const y1 = startRect.top + startRect.height / 2 + window.scrollY;
+        const x2 = endRect.left + endRect.width / 2 + window.scrollX;
+        const y2 = endRect.top + endRect.height / 2 + window.scrollY;
+        let path;
+        const currentLineStyle = lineStyles[currentLineStyleIndex];
+        if (currentLineStyle === "straight") {
+          path = `M ${x1} ${y1} L ${x2} ${y2}`;
+        } else if (currentLineStyle === "curved") {
+          const dx = (x2 - x1) / 2;
+          const dy = (y2 - y1) / 2;
+          path = `M ${x1} ${y1} Q ${x1} ${y1 + dy}, ${x1 + dx} ${y1 + dy} T ${x2} ${y2}`;
+        } else if (currentLineStyle === "grid") {
+          if (isHorizontalStart === null) {
+            path = `M ${x1} ${y1} L ${x2} ${y2}`;
+          } else if (isHorizontalStart) {
+            path = `M ${x1} ${y1} H ${x2} V ${y2}`;
+          } else {
+            path = `M ${x1} ${y1} V ${y2} H ${x2}`;
+          }
+        }
+        const previousPath = pathElement.getAttribute("d");
+        if (previousPath !== path) {
+          pathElement.setAttribute("d", path);
+        }
+      }
+      function updateAllLines() {
+        if (!shouldUpdateLines)
+          return;
         connectionsData.forEach((connection) => {
           updateLine(connection);
         });
+        requestAnimationFrame(updateAllLines);
       }
-    }
-    function addHoverListeners() {
-      const hoverElements = document.querySelectorAll("[hover-lines-changer]");
-      hoverElements.forEach((element) => {
-        element.addEventListener("mouseenter", onHover);
-      });
-    }
-    function onHover(event) {
-      if (window.innerWidth >= 768) {
-        const element = event.currentTarget;
-        const newLineStyle = element.getAttribute("hover-lines-changer");
-        if (["straight", "grid", "fluid", "curved"].includes(newLineStyle)) {
-          const styleName = newLineStyle === "fluid" ? "curved" : newLineStyle;
-          setLineStyle(styleName);
+      function setLineStyle(styleName) {
+        const index = lineStyles.indexOf(styleName);
+        if (index !== -1) {
+          currentLineStyleIndex = index;
+          connectionsData.forEach((connection) => {
+            updateLine(connection);
+          });
         }
       }
-    }
-    function restartScript() {
-      const svg = document.getElementById("connection-svg");
-      if (svg) {
-        svg.parentNode.removeChild(svg);
+      function addHoverListeners() {
+        const hoverElements = document.querySelectorAll("[hover-lines-changer]");
+        hoverElements.forEach((element) => {
+          element.addEventListener("mouseenter", onHover);
+        });
       }
-      connectionsData.length = 0;
-      shouldUpdateLines = false;
-      setTimeout(() => {
-        previousWindowWidth = window.innerWidth;
-        shouldUpdateLines = true;
-        drawConnections();
-        addHoverListeners();
-      }, 1e3);
-    }
-    drawConnections();
-    requestAnimationFrame(updateAllLines);
-    addHoverListeners();
-    window.addEventListener("resize", () => {
-      clearTimeout(window.resizeTimeout);
-      window.resizeTimeout = setTimeout(() => {
-        handleResize();
-      }, 100);
-    });
-    function handleResize() {
-      const currentWindowWidth = window.innerWidth;
-      let crossedBreakpoint = false;
-      for (const breakpoint of breakpoints) {
-        if (previousWindowWidth < breakpoint && currentWindowWidth >= breakpoint || previousWindowWidth >= breakpoint && currentWindowWidth < breakpoint) {
-          crossedBreakpoint = true;
-          break;
+      function onHover(event) {
+        if (window.innerWidth >= 768) {
+          const element = event.currentTarget;
+          const newLineStyle = element.getAttribute("hover-lines-changer");
+          if (["straight", "grid", "fluid", "curved"].includes(newLineStyle)) {
+            const styleName = newLineStyle === "fluid" ? "curved" : newLineStyle;
+            setLineStyle(styleName);
+          }
         }
       }
-      if (crossedBreakpoint) {
-        restartScript();
-      } else {
-        drawConnections();
+      function restartScript() {
+        const svg = document.getElementById("connection-svg");
+        if (svg) {
+          svg.parentNode.removeChild(svg);
+        }
+        connectionsData.length = 0;
+        shouldUpdateLines = false;
+        setTimeout(() => {
+          previousWindowWidth = window.innerWidth;
+          shouldUpdateLines = true;
+          drawConnections();
+          addHoverListeners();
+        }, 1e3);
       }
-      previousWindowWidth = currentWindowWidth;
-    }
-    const observer = new MutationObserver(() => {
-      connectionsData.forEach((connection) => {
-        updateLine(connection);
+      drawConnections();
+      requestAnimationFrame(updateAllLines);
+      addHoverListeners();
+      window.addEventListener("resize", () => {
+        clearTimeout(window.resizeTimeout);
+        window.resizeTimeout = setTimeout(() => {
+          handleResize();
+        }, 100);
       });
-    });
-    const config = { attributes: true, childList: true, subtree: true, characterData: true };
-    observer.observe(document.body, config);
-  }, 2500);
+      function handleResize() {
+        const currentWindowWidth = window.innerWidth;
+        let crossedBreakpoint = false;
+        for (const breakpoint of breakpoints) {
+          if (previousWindowWidth < breakpoint && currentWindowWidth >= breakpoint || previousWindowWidth >= breakpoint && currentWindowWidth < breakpoint) {
+            crossedBreakpoint = true;
+            break;
+          }
+        }
+        if (crossedBreakpoint) {
+          restartScript();
+        } else {
+          drawConnections();
+        }
+        previousWindowWidth = currentWindowWidth;
+      }
+      const observer = new MutationObserver(() => {
+        connectionsData.forEach((connection) => {
+          updateLine(connection);
+        });
+      });
+      const config = { attributes: true, childList: true, subtree: true, characterData: true };
+      observer.observe(document.body, config);
+    }, 2500);
+  };
 
   // src/utils/stats-hero.ts
   var func_statsHero = () => {
@@ -577,7 +465,6 @@
         return response.json();
       }).then((data) => {
         const totalStats = data["total-stats"];
-        console.log("\u0414\u0430\u043D\u043D\u044B\u0435 total-stats:", totalStats);
         for (const key in totalStats) {
           if (totalStats.hasOwnProperty(key)) {
             const element = document.getElementById(key);
@@ -678,8 +565,7 @@
     func_statsHero();
     func_yearCounter();
     func_togglClassTriggerTarget();
-    (void 0)();
-    func_cardFly();
+    func_mindConnectionsLeader();
   });
 })();
 //# sourceMappingURL=index.js.map

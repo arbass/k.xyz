@@ -12,7 +12,7 @@ export const func_statsHero = () => {
       })
       .then((data) => {
         const totalStats = data['total-stats'];
-        console.log('Данные total-stats:', totalStats);
+        // console.log('Данные total-stats:', totalStats);
         // Проходим по ключам в объекте totalStats
         for (const key in totalStats) {
           if (totalStats.hasOwnProperty(key)) {
