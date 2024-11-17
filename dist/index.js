@@ -304,41 +304,39 @@
         const lineThickness = 1;
         const lineColor = "#666666";
         connections.forEach((startEl) => {
-          const targetSelectors = startEl.getAttribute("mind-connection").split(",").map((selector) => selector.trim());
+          const targetSelectors = startEl.getAttribute("mind-connection").split(",");
           targetSelectors.forEach((targetSelector) => {
-            const matchingElements = document.querySelectorAll(
-              `[mind-connection~="${targetSelector}"]`
-            );
-            if (matchingElements.length > 0) {
-              const endEl = matchingElements[0];
-              const isMobile = window.innerWidth < 768;
-              const startElHiddenOnMobile = startEl.classList.contains("hide-on-mobile");
-              const endElHiddenOnMobile = endEl.classList.contains("hide-on-mobile");
-              if (isMobile && (startElHiddenOnMobile || endElHiddenOnMobile)) {
-                return;
-              }
-              const isHorizontalAttr = startEl.getAttribute("data-start-horizontal");
-              const isHorizontalStart = isHorizontalAttr !== null ? isHorizontalAttr === "true" ? true : false : null;
-              let connection = connectionsData.find(
-                (data) => data.startEl === startEl && data.endEl === endEl
-              );
-              if (!connection) {
-                const pathElement = document.createElementNS("http://www.w3.org/2000/svg", "path");
-                pathElement.setAttribute("stroke", lineColor);
-                pathElement.setAttribute("stroke-width", lineThickness);
-                pathElement.setAttribute("fill", "none");
-                pathElement.classList.add("connection-line");
-                svg.appendChild(pathElement);
-                connection = {
-                  startEl,
-                  endEl,
-                  pathElement,
-                  isHorizontalStart
-                };
-                connectionsData.push(connection);
-              }
-              updateLine(connection);
+            const trimmedSelector = targetSelector.trim();
+            const endEl = document.querySelector(`[mind-connection="${trimmedSelector}"]`);
+            if (!endEl)
+              return;
+            const isMobile = window.innerWidth < 768;
+            const startElHiddenOnMobile = startEl.classList.contains("hide-on-mobile");
+            const endElHiddenOnMobile = endEl.classList.contains("hide-on-mobile");
+            if (isMobile && (startElHiddenOnMobile || endElHiddenOnMobile)) {
+              return;
             }
+            const isHorizontalAttr = startEl.getAttribute("data-start-horizontal");
+            const isHorizontalStart = isHorizontalAttr !== null ? isHorizontalAttr === "true" ? true : false : null;
+            let connection = connectionsData.find(
+              (data) => data.startEl === startEl && data.endEl === endEl
+            );
+            if (!connection) {
+              const pathElement = document.createElementNS("http://www.w3.org/2000/svg", "path");
+              pathElement.setAttribute("stroke", lineColor);
+              pathElement.setAttribute("stroke-width", lineThickness);
+              pathElement.setAttribute("fill", "none");
+              pathElement.classList.add("connection-line");
+              svg.appendChild(pathElement);
+              connection = {
+                startEl,
+                endEl,
+                pathElement,
+                isHorizontalStart
+              };
+              connectionsData.push(connection);
+            }
+            updateLine(connection);
           });
         });
       }
@@ -368,9 +366,13 @@
           }
         }
         const previousPath = pathElement.getAttribute("d");
-        if (previousPath !== path) {
-          pathElement.setAttribute("d", path);
+        if (previousPath !== null && previousPath !== path) {
+          pathElement.animate([{ d: previousPath }, { d: path }], {
+            duration: 1e3,
+            fill: "forwards"
+          });
         }
+        pathElement.setAttribute("d", path);
       }
       function updateAllLines() {
         if (!shouldUpdateLines)
@@ -444,13 +446,6 @@
         }
         previousWindowWidth = currentWindowWidth;
       }
-      const observer = new MutationObserver(() => {
-        connectionsData.forEach((connection) => {
-          updateLine(connection);
-        });
-      });
-      const config = { attributes: true, childList: true, subtree: true, characterData: true };
-      observer.observe(document.body, config);
     }, 2500);
   };
 

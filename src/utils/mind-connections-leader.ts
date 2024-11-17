@@ -33,61 +33,54 @@ export const func_mindConnectionsLeader = () => {
       const lineThickness = 1; // Ваша изначальная толщина
       const lineColor = '#666666'; // Цвет линий
 
-      // Обновляем или создаем линии
       connections.forEach((startEl) => {
-        const targetSelectors = startEl
-          .getAttribute('mind-connection')
-          .split(',')
-          .map((selector) => selector.trim());
+        const targetSelectors = startEl.getAttribute('mind-connection').split(',');
+
         targetSelectors.forEach((targetSelector) => {
-          const matchingElements = document.querySelectorAll(
-            `[mind-connection~="${targetSelector}"]`
+          const trimmedSelector = targetSelector.trim();
+          const endEl = document.querySelector(`[mind-connection="${trimmedSelector}"]`);
+
+          if (!endEl) return;
+
+          // Проверяем, нужно ли пропустить отрисовку линии на мобильных устройствах
+          const isMobile = window.innerWidth < 768;
+          const startElHiddenOnMobile = startEl.classList.contains('hide-on-mobile');
+          const endElHiddenOnMobile = endEl.classList.contains('hide-on-mobile');
+
+          if (isMobile && (startElHiddenOnMobile || endElHiddenOnMobile)) {
+            // Если условие выполняется, пропускаем отрисовку этой линии
+            return;
+          }
+
+          const isHorizontalAttr = startEl.getAttribute('data-start-horizontal');
+          const isHorizontalStart =
+            isHorizontalAttr !== null ? (isHorizontalAttr === 'true' ? true : false) : null;
+
+          // Ищем существующие данные о линии между этими элементами
+          let connection = connectionsData.find(
+            (data) => data.startEl === startEl && data.endEl === endEl
           );
 
-          // Предполагается, что первый элемент — начало, а второй — конец
-          if (matchingElements.length > 0) {
-            const endEl = matchingElements[0];
+          if (!connection) {
+            // Если соединения еще нет, создаем новое
+            const pathElement = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            pathElement.setAttribute('stroke', lineColor);
+            pathElement.setAttribute('stroke-width', lineThickness);
+            pathElement.setAttribute('fill', 'none');
+            pathElement.classList.add('connection-line');
+            svg.appendChild(pathElement);
 
-            // Проверяем, нужно ли пропустить отрисовку линии на мобильных устройствах
-            const isMobile = window.innerWidth < 768;
-            const startElHiddenOnMobile = startEl.classList.contains('hide-on-mobile');
-            const endElHiddenOnMobile = endEl.classList.contains('hide-on-mobile');
-
-            if (isMobile && (startElHiddenOnMobile || endElHiddenOnMobile)) {
-              // Если условие выполняется, пропускаем отрисовку этой линии
-              return;
-            }
-
-            const isHorizontalAttr = startEl.getAttribute('data-start-horizontal');
-            const isHorizontalStart =
-              isHorizontalAttr !== null ? (isHorizontalAttr === 'true' ? true : false) : null;
-
-            // Ищем существующие данные о линии между этими элементами
-            let connection = connectionsData.find(
-              (data) => data.startEl === startEl && data.endEl === endEl
-            );
-
-            if (!connection) {
-              // Если соединения еще нет, создаем новое
-              const pathElement = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-              pathElement.setAttribute('stroke', lineColor);
-              pathElement.setAttribute('stroke-width', lineThickness);
-              pathElement.setAttribute('fill', 'none');
-              pathElement.classList.add('connection-line');
-              svg.appendChild(pathElement);
-
-              connection = {
-                startEl,
-                endEl,
-                pathElement,
-                isHorizontalStart,
-              };
-              connectionsData.push(connection);
-            }
-
-            // Обновляем позицию линии
-            updateLine(connection);
+            connection = {
+              startEl,
+              endEl,
+              pathElement,
+              isHorizontalStart,
+            };
+            connectionsData.push(connection);
           }
+
+          // Обновляем позицию линии
+          updateLine(connection);
         });
       });
     }
@@ -129,10 +122,14 @@ export const func_mindConnectionsLeader = () => {
       }
 
       const previousPath = pathElement.getAttribute('d');
-      if (previousPath !== path) {
-        // Заменяем атрибут 'd' напрямую
-        pathElement.setAttribute('d', path);
+      if (previousPath !== null && previousPath !== path) {
+        // Анимируем переход между путями, только если предыдущий путь существует
+        pathElement.animate([{ d: previousPath }, { d: path }], {
+          duration: 1000,
+          fill: 'forwards',
+        });
       }
+      pathElement.setAttribute('d', path);
     }
 
     // Функция для обновления всех линий (используется для анимации)
@@ -242,22 +239,6 @@ export const func_mindConnectionsLeader = () => {
       previousWindowWidth = currentWindowWidth;
     }
 
-    // Наблюдатель за изменениями в DOM
-    const observer = new MutationObserver(() => {
-      connectionsData.forEach((connection) => {
-        updateLine(connection);
-      });
-    });
-
-    // Настройки наблюдателя
-    const config = { attributes: true, childList: true, subtree: true, characterData: true };
-
-    // Начинаем наблюдение за документом
-    observer.observe(document.body, config);
-
-    // Удаляем этот блок, чтобы отключить переключение стиля линий по интервалу
-    // setInterval(() => {
-    //   toggleLineStyle();
-    // }, 10000);
+    // Наблюдатели
   }, 2500);
 };
