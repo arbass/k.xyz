@@ -48,8 +48,152 @@
 
   // src/utils/func_card-fly.ts
   var func_cardFly = () => {
-    const el_cardFly = document.querySelectorAll("[card-fly-parent]");
-    if (el_cardFly.length) {
+    const el_cardFlyParents = document.querySelectorAll("[card-fly-parent]");
+    if (el_cardFlyParents.length) {
+      el_cardFlyParents.forEach((parent) => {
+        const sea = parent.querySelector("[card-fly-sea]");
+        const grid = parent.querySelector("[card-fly-grid]");
+        const toggle = parent.querySelector("[card-fly-toggl]");
+        const cards = Array.from(parent.querySelectorAll("[card-fly-child]"));
+        let animationActive = false;
+        const gridHeight = grid.offsetHeight;
+        const rem = parseFloat(getComputedStyle(document.documentElement).fontSize);
+        let cardPositions;
+        function initCardPositions() {
+          cardPositions = cards.map((card) => {
+            const rect = card.getBoundingClientRect();
+            const parentRect = parent.getBoundingClientRect();
+            return {
+              card,
+              left: (rect.left - parentRect.left) / rem,
+              top: (rect.top - parentRect.top) / rem,
+              width: rect.width / rem,
+              height: rect.height / rem
+            };
+          });
+        }
+        initCardPositions();
+        const parentAttr = parent.getAttribute("card-fly-parent");
+        if (parentAttr === "on") {
+          animationActive = true;
+        }
+        function toggleAnimation() {
+          animationActive = !animationActive;
+          if (animationActive) {
+            startAnimation();
+          } else {
+            stopAnimation();
+          }
+        }
+        toggle.addEventListener("click", toggleAnimation);
+        if (animationActive) {
+          startAnimation();
+        }
+        function startAnimation() {
+          grid.style.transition = "height 1s ease";
+          grid.style.height = "0";
+          parent.style.position = "relative";
+          initCardPositions();
+          const parentRect = parent.getBoundingClientRect();
+          const seaRect = sea.getBoundingClientRect();
+          const seaRectRem = {
+            left: (seaRect.left - parentRect.left) / rem,
+            top: (seaRect.top - parentRect.top) / rem,
+            width: seaRect.width / rem,
+            height: seaRect.height / rem
+          };
+          cards.forEach((card, index) => {
+            card.style.position = "absolute";
+            card.style.transition = "none";
+            card.style.width = `${cardPositions[index].width}rem`;
+            card.style.height = `${cardPositions[index].height}rem`;
+            if (!card.dataset.id) {
+              card.dataset.id = Math.random().toString(36).substr(2, 9);
+            }
+            const gridX = cardPositions[index].left;
+            const gridY = cardPositions[index].top;
+            card.style.left = `${gridX}rem`;
+            card.style.top = `${gridY}rem`;
+          });
+          parent.offsetHeight;
+          requestAnimationFrame(() => {
+            cards.forEach((card) => {
+              card.style.transition = "left 1s ease, top 1s ease";
+            });
+            cards.forEach((card) => {
+              const randomX = seaRectRem.left + Math.random() * (seaRectRem.width - parseFloat(card.style.width));
+              const randomY = seaRectRem.top + Math.random() * (seaRectRem.height - parseFloat(card.style.height));
+              card.style.left = `${randomX}rem`;
+              card.style.top = `${randomY}rem`;
+              card.dataset.seaLeft = randomX;
+              card.dataset.seaTop = randomY;
+            });
+            sea.addEventListener("mousemove", onSeaMouseMove);
+          });
+        }
+        function stopAnimation() {
+          grid.style.transition = "height 1s ease";
+          grid.style.height = `${gridHeight / rem}rem`;
+          cards.forEach((card) => {
+            card.style.transition = "left 1s ease, top 1s ease";
+          });
+          parent.offsetHeight;
+          requestAnimationFrame(() => {
+            cards.forEach((card, index) => {
+              const gridX = cardPositions[index].left;
+              const gridY = cardPositions[index].top;
+              card.style.left = `${gridX}rem`;
+              card.style.top = `${gridY}rem`;
+              const transitionEndHandler = function(event) {
+                if (event.propertyName === "left" || event.propertyName === "top") {
+                  card.style.position = "";
+                  card.style.left = "";
+                  card.style.top = "";
+                  card.style.width = "";
+                  card.style.height = "";
+                  card.style.transition = "";
+                  card.removeEventListener("transitionend", transitionEndHandler);
+                }
+              };
+              card.addEventListener("transitionend", transitionEndHandler);
+              delete card.dataset.seaLeft;
+              delete card.dataset.seaTop;
+            });
+          });
+          sea.removeEventListener("mousemove", onSeaMouseMove);
+        }
+        function onSeaMouseMove(event) {
+          const mouseX = event.clientX;
+          const mouseY = event.clientY;
+          cards.forEach((card) => {
+            const cardRect = card.getBoundingClientRect();
+            const cardCenterX = cardRect.left + cardRect.width / 2;
+            const cardCenterY = cardRect.top + cardRect.height / 2;
+            const dx = cardCenterX - mouseX;
+            const dy = cardCenterY - mouseY;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            const maxDistance = 100;
+            if (distance < maxDistance) {
+              const moveFactor = (maxDistance - distance) / maxDistance;
+              const offsetX = dx * moveFactor * 0.2;
+              const offsetY = dy * moveFactor * 0.2;
+              const originalLeft = parseFloat(card.dataset.seaLeft);
+              const originalTop = parseFloat(card.dataset.seaTop);
+              const newLeft = originalLeft + offsetX / rem;
+              const newTop = originalTop + offsetY / rem;
+              card.style.transition = "left 0.2s ease, top 0.2s ease";
+              card.style.left = `${newLeft}rem`;
+              card.style.top = `${newTop}rem`;
+            } else {
+              const originalLeft = parseFloat(card.dataset.seaLeft);
+              const originalTop = parseFloat(card.dataset.seaTop);
+              card.style.transition = "left 0.5s ease, top 0.5s ease";
+              card.style.left = `${originalLeft}rem`;
+              card.style.top = `${originalTop}rem`;
+            }
+          });
+        }
+      });
     }
   };
 
@@ -351,17 +495,17 @@
         const { startEl, endEl, pathElement, isHorizontalStart } = connection;
         const startRect = startEl.getBoundingClientRect();
         const endRect = endEl.getBoundingClientRect();
-        const x1 = +(startRect.left + startRect.width / 2 + window.scrollX).toFixed(2);
-        const y1 = +(startRect.top + startRect.height / 2 + window.scrollY).toFixed(2);
-        const x2 = +(endRect.left + endRect.width / 2 + window.scrollX).toFixed(2);
-        const y2 = +(endRect.top + endRect.height / 2 + window.scrollY).toFixed(2);
+        const x1 = startRect.left + startRect.width / 2 + window.scrollX;
+        const y1 = startRect.top + startRect.height / 2 + window.scrollY;
+        const x2 = endRect.left + endRect.width / 2 + window.scrollX;
+        const y2 = endRect.top + endRect.height / 2 + window.scrollY;
         let path;
         const currentLineStyle = lineStyles[currentLineStyleIndex];
         if (currentLineStyle === "straight") {
           path = `M ${x1} ${y1} L ${x2} ${y2}`;
         } else if (currentLineStyle === "curved") {
-          const dx = +((x2 - x1) / 2).toFixed(2);
-          const dy = +((y2 - y1) / 2).toFixed(2);
+          const dx = (x2 - x1) / 2;
+          const dy = (y2 - y1) / 2;
           path = `M ${x1} ${y1} Q ${x1} ${y1 + dy}, ${x1 + dx} ${y1 + dy} T ${x2} ${y2}`;
         } else if (currentLineStyle === "grid") {
           if (isHorizontalStart === null) {
@@ -373,16 +517,13 @@
           }
         }
         const previousPath = pathElement.getAttribute("d");
-        if (previousPath === path || previousPath && previousPath.replace(/\s/g, "") === path.replace(/\s/g, "") || Math.abs(x1 - x2) < 1 && Math.abs(y1 - y2) < 1) {
-          return;
-        }
-        if (previousPath && previousPath !== path) {
+        if (previousPath !== path) {
           pathElement.animate([{ d: previousPath }, { d: path }], {
             duration: 1e3,
             fill: "forwards"
           });
+          pathElement.setAttribute("d", path);
         }
-        pathElement.setAttribute("d", path);
       }
       function updateAllLines() {
         if (!shouldUpdateLines)
@@ -456,6 +597,13 @@
         }
         previousWindowWidth = currentWindowWidth;
       }
+      const observer = new MutationObserver(() => {
+        connectionsData.forEach((connection) => {
+          updateLine(connection);
+        });
+      });
+      const config = { attributes: true, childList: true, subtree: true, characterData: true };
+      observer.observe(document.body, config);
     }, 2500);
   };
 
