@@ -7,8 +7,10 @@ import { func_heightTransition } from '$utils/height-transition';
 import { func_heroForm } from '$utils/hero-form';
 // import { func_mindConnections } from '$utils/mind-connections';
 import { func_mindConnectionsLeader } from '$utils/mind-connections-leader';
+// import { func_portfolioTable } from '$utils/portfolio-table';
 import { func_statsHero } from '$utils/stats-hero';
 import { func_syncClick } from '$utils/sync-click';
+import { func_testimonialsGrid } from '$utils/testimonials-grid';
 import { func_togglClassTriggerTarget } from '$utils/toggl-class-trigger-target';
 import { func_yearCounter } from '$utils/year-counter';
 
@@ -27,4 +29,6 @@ window.Webflow.push(() => {
   func_togglClassTriggerTarget();
   func_mindConnectionsLeader();
   func_cardFly();
+  func_testimonialsGrid();
+  // func_portfolioTable();
 });
